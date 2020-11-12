@@ -1,14 +1,14 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Knockme Observation
+  Knockme Observer
 
 Globals:
   Function:
     Timeout: 3
 
 Resources:
-  KnockmeObservationFunction:
+  KnockmeObserverFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: knockme_observer/
@@ -28,10 +28,10 @@ Resources:
         - CloudWatchLogsReadOnlyAccess
         - AmazonSNSFullAccess
 
-  KnockmeObservationLogGroup:
+  KnockmeObserverLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${KnockmeObservationFunction}
+      LogGroupName: !Sub /aws/lambda/${KnockmeObserverFunction}
       RetentionInDays: 14
 
   KnockmeStageTopic:
@@ -79,6 +79,6 @@ Resources:
       Threshold: 0
 
 Outputs:
-  HelloWorldFunction:
-    Description: "Knockme Observation Lambda Function ARN"
-    Value: !GetAtt KnockmeObservationFunction.Arn
+  KnockmeObserver:
+    Description: "Knockme Observer Lambda Function ARN"
+    Value: !GetAtt KnockmeObserverFunction.Arn

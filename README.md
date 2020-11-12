@@ -2,6 +2,39 @@
 
 AWS SAMを用いたKnockme監視用SAMリポジトリ
 
+# 使い方
+
+## AWS SAMをインストールする(Macの場合)
+
+SAMのインストールには、Mac以外の場合でも`homebrew`を用いるのが一番手軽です。
+
+### 前提
+
+- `python3`
+- `aws-cli` (`aws configure`が済んでいること)
+- `docker`
+- `homebrew`
+
+### インストール手順
+
+```sh
+$ brew tap aws/tap
+$ brew install aws-sam-cli
+```
+
+# プロジェクトのデプロイ方法
+
+```sh
+$ sam build
+$ sam deploy  # Cloudformationスタックを確認後、yを押す必要があります
+```
+
+# プロジェクトのアンインストール方法
+
+```sh
+$ aws cloudformation delete-stack --stack-name knockme-observer
+```
+
 # sam-app
 
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
