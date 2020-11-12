@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Knockme Observation
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  KnockmeObservationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: knockme_observer/
+      Timeout: 60
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref KnockmeStageEmailTopic
+          SLACK_SNS_TOPIC_ARN: arn:aws:sns:ap-northeast-1:747245521221:awslambdaBot
+      Events: 
+        SNS:
+          Type: SNS
+          Properties:
+            Topic: !Ref KnockmeStageTopic
+      Policies:
+        - CloudWatchLogsReadOnlyAccess
+        - AmazonSNSFullAccess
+
+  KnockmeObservationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${KnockmeObservationFunction}
+      RetentionInDays: 14
+
+  KnockmeStageTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: KnockmeStageTopic
+
+  KnockmeStageEmailTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: KnockmeStageEmailTopic
+
+  KnockmeStageEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: masakatsu.nakamura@lassic.co.jp
+      Protocol: email
+      TopicArn: !Ref 'KnockmeStageEmailTopic'
+
+  KnockmeStageMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: '?"ユーザへの契約自動更新メール送信に失敗しました" ?"管理者への契約自動更新メール送信失敗通知メール送信に失敗しました"'
+      LogGroupName: /ecs/stg-web-task-fargate
+      MetricTransformations:
+        - MetricValue: 1
+          DefaultValue: 0
+          MetricNamespace: LogMetrics
+          MetricName: KnockmeStageError
+
+  KnockmeStageErrorAlerm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      ActionsEnabled: 'true'
+      AlarmActions:
+        - !Ref KnockmeStageTopic
+      AlarmDescription: KnockmeStageError
+      AlarmName: KnockmeStageError
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+      MetricName: KnockmeStageError
+      Namespace: LogMetrics
+      Period: 300
+      Statistic: Sum
+      Threshold: 0
+
+Outputs:
+  HelloWorldFunction:
+    Description: "Knockme Observation Lambda Function ARN"
+    Value: !GetAtt KnockmeObservationFunction.Arn
