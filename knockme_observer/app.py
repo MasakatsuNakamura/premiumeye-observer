@@ -69,8 +69,8 @@ def lambda_handler(event, context):
     #SNS Publish(Slack通知)
     sns.publish(
       TopicArn = os.environ['SLACK_SNS_TOPIC_ARN'],
-      Message = message,
-      Subject = alarm_name,
+      Message = alarm_name + '\n' + message,
+      Subject = 'notification_stage',
     )
 
   except Exception as e:
