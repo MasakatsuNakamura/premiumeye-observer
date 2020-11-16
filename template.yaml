@@ -11,14 +11,10 @@ Resources:
   KnockmeObserverFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: knockme_observer/
+      CodeUri: functions/knockme_observer/
       Timeout: 60
       Handler: app.lambda_handler
       Runtime: python3.8
-      Environment:
-        Variables:
-          SNS_TOPIC_ARN: !Ref KnockmeStageEmailTopic
-          SLACK_SNS_TOPIC_ARN: arn:aws:sns:ap-northeast-1:747245521221:awslambdaBot
       Events: 
         SNS:
           Type: SNS
@@ -32,6 +28,33 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/${KnockmeObserverFunction}
+      RetentionInDays: 14
+
+  WebSocketErrorObserverFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/websocket_error_observer/
+      Timeout: 60
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Events:
+        SNS:
+          Type: SNS
+          Properties:
+            Topic: !Ref KnockmeStageTopic
+      Policies:
+        - CloudWatchLogsReadOnlyAccess
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 'ecs:*'
+              Resource: '*'
+
+  WebSocketErrorObserverLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${WebSocketErrorObserverFunction}
       RetentionInDays: 14
 
   KnockmeStageTopic:
