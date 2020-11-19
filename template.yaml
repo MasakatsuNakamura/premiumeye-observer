@@ -15,11 +15,23 @@ Resources:
       Timeout: 60
       Handler: app.lambda_handler
       Runtime: python3.8
-      Events: 
-        SNS:
+      Environment:
+        Variables:
+          EMAIL_SNS_TOPIC_ARN: !Ref KnockmeEmailTopic
+          SLACK_SNS_TOPIC_ARN: arn:aws:sns:ap-northeast-1:747245521221:awslambdaBot
+      Events:
+        Production:
           Type: SNS
           Properties:
-            Topic: !Ref KnockmeStageTopic
+            Topic: arn:aws:sns:ap-northeast-1:747245521221:notificationProduction
+        Stage:
+          Type: SNS
+          Properties:
+            Topic: arn:aws:sns:ap-northeast-1:747245521221:notificationStage
+        Stage2:
+          Type: SNS
+          Properties:
+            Topic: arn:aws:sns:ap-northeast-1:747245521221:notificationStage2
       Policies:
         - CloudWatchLogsReadOnlyAccess
         - AmazonSNSFullAccess
@@ -30,76 +42,17 @@ Resources:
       LogGroupName: !Sub /aws/lambda/${KnockmeObserverFunction}
       RetentionInDays: 14
 
-  WebSocketErrorObserverFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/websocket_error_observer/
-      Timeout: 60
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Events:
-        SNS:
-          Type: SNS
-          Properties:
-            Topic: !Ref KnockmeStageTopic
-      Policies:
-        - CloudWatchLogsReadOnlyAccess
-        - Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'ecs:*'
-              Resource: '*'
-
-  WebSocketErrorObserverLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${WebSocketErrorObserverFunction}
-      RetentionInDays: 14
-
-  KnockmeStageTopic:
+  KnockmeEmailTopic:
     Type: AWS::SNS::Topic
     Properties: 
-      TopicName: KnockmeStageTopic
+      TopicName: KnockmeEmailTopic
 
-  KnockmeStageEmailTopic:
-    Type: AWS::SNS::Topic
-    Properties: 
-      TopicName: KnockmeStageEmailTopic
-
-  KnockmeStageEmailSubscription:
+  KnockmeEmailSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Endpoint: masakatsu.nakamura@lassic.co.jp
       Protocol: email
-      TopicArn: !Ref 'KnockmeStageEmailTopic'
-
-  KnockmeStageMetricFilter:
-    Type: AWS::Logs::MetricFilter
-    Properties:
-      FilterPattern: '?"ユーザへの契約自動更新メール送信に失敗しました" ?"管理者への契約自動更新メール送信失敗通知メール送信に失敗しました"'
-      LogGroupName: /ecs/stg-web-task-fargate
-      MetricTransformations:
-        - MetricValue: 1
-          DefaultValue: 0
-          MetricNamespace: LogMetrics
-          MetricName: KnockmeStageError
-
-  KnockmeStageErrorAlerm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      ActionsEnabled: 'true'
-      AlarmActions:
-        - !Ref KnockmeStageTopic
-      AlarmDescription: KnockmeStageError
-      AlarmName: KnockmeStageError
-      ComparisonOperator: GreaterThanThreshold
-      EvaluationPeriods: 1
-      MetricName: KnockmeStageError
-      Namespace: LogMetrics
-      Period: 300
-      Statistic: Sum
-      Threshold: 0
+      TopicArn: !Ref 'KnockmeEmailTopic'
 
 Outputs:
   KnockmeObserver:
