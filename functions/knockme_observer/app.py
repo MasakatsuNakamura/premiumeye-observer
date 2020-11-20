@@ -68,8 +68,8 @@ def lambda_handler(event, context):
   )
 
   #SNS Publish(Slack通知)
-  #sns.publish(
-  #  TopicArn = os.environ['SLACK_SNS_TOPIC_ARN'],
-  #  Message = alarm_name + '\n' + message,
-  #  Subject = channel,
-  #)
+  sns.publish(
+    TopicArn = os.environ['SLACK_SNS_TOPIC_ARN'],
+    Message = alarm_name + '\n' + message,
+    Subject = channel,
+  )
