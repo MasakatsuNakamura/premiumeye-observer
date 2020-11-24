@@ -61,11 +61,12 @@ def lambda_handler(event, context):
   message = '\n'.join(e['message'] for e in events)
 
   #SNS Publish(メール送信)
-  sns.publish(
-    TopicArn = os.environ['EMAIL_SNS_TOPIC_ARN'],
-    Message = message,
-    Subject = alarm_name
-  )
+  if channel == 'notification_production':
+    sns.publish(
+      TopicArn = os.environ['EMAIL_SNS_TOPIC_ARN'],
+      Message = message,
+      Subject = alarm_name
+    )
 
   #SNS Publish(Slack通知)
   sns.publish(

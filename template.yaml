@@ -50,7 +50,7 @@ Resources:
   KnockmeEmailSubscription:
     Type: AWS::SNS::Subscription
     Properties:
-      Endpoint: masakatsu.nakamura@lassic.co.jp
+      Endpoint: prod_alert@knockme.jp
       Protocol: email
       TopicArn: !Ref 'KnockmeEmailTopic'
 
