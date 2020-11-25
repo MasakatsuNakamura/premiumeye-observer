@@ -50,7 +50,7 @@ def lambda_handler(event, context):
   while True:
     response = logs.filter_log_events(**params)
     events += response['events']
-    if 'nextToken' in events:
+    if 'nextToken' in response:
       params['nextToken'] = response['nextToken']
     else:
       break
