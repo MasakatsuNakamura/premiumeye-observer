@@ -54,6 +54,41 @@ Resources:
       Protocol: email
       TopicArn: !Ref 'KnockmeEmailTopic'
 
+  UpdateActivationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/update_activation/
+      Timeout: 60
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Events:
+        Rule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 23 ? * * *)
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - 'ssm:DescribeActivations'
+                - 'ssm:PutParameter'
+                - 'ssm:CreateActivation'
+                - 'ssm:DeleteActivation'
+                - 'ecs:ListServices'
+                - 'ecs:UpdateServices'
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - 'iam:PassRole'
+              Resource: 'arn:aws:iam::747245521221:role/service-role/AmazonEC2RunCommandRoleForManagedInstances'
+
+  UpdateActivationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${UpdateActivationFunction}
+      RetentionInDays: 14
+
 Outputs:
   KnockmeObserver:
     Description: "Knockme Observer Lambda Function ARN"
