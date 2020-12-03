@@ -76,7 +76,7 @@ Resources:
                 - 'ssm:CreateActivation'
                 - 'ssm:DeleteActivation'
                 - 'ecs:ListServices'
-                - 'ecs:UpdateServices'
+                - 'ecs:UpdateService'
               Resource: '*'
             - Effect: Allow
               Action:
