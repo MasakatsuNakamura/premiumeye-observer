@@ -54,6 +54,56 @@ Resources:
       Protocol: email
       TopicArn: !Ref 'KnockmeEmailTopic'
 
+  NotifyInstanceIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/notyfy_instance_id/
+      Timeout: 60
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          SLACK_SNS_TOPIC_ARN: arn:aws:sns:ap-northeast-1:747245521221:awslambdaBot
+      Events:
+        ProductionWeb:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: /ecs/prod-web-task-fargate-1_0_0
+            FilterPattern: Successfully registered the instance with AWS SSM
+        ProductionWorker:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: /ecs/prod-worker-fargate-1_0_0
+            FilterPattern: Successfully registered the instance with AWS SSM
+        StageWeb:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: /ecs/stg-web-task-fargate
+            FilterPattern: Successfully registered the instance with AWS SSM
+        StageWorker:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: /ecs/stg-worker-fargate
+            FilterPattern: Successfully registered the instance with AWS SSM
+        Stage2Web:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: /ecs/stg2-web-task-fargate
+            FilterPattern: Successfully registered the instance with AWS SSM
+        Stage2Worker:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: /ecs/stg2-worker-fargate
+            FilterPattern: Successfully registered the instance with AWS SSM
+      Policies:
+        - AmazonSNSFullAccess
+
+  NotifyInstanceIdLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${NotifyInstanceIdFunction}
+      RetentionInDays: 14
+
 Outputs:
   KnockmeObserver:
     Description: "Knockme Observer Lambda Function ARN"
