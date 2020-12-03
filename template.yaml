@@ -65,7 +65,7 @@ Resources:
         Rule:
           Type: Schedule
           Properties:
-            Schedule: cron(0 23 ? * * *)
+            Schedule: cron(0 15 ? * * *)
       Policies:
         - Version: '2012-10-17'
           Statement:
