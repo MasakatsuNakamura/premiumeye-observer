@@ -57,7 +57,7 @@ Resources:
   NotifyInstanceIdFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/notyfy_instance_id/
+      CodeUri: functions/notify_instance_id/
       Timeout: 60
       Handler: app.lambda_handler
       Runtime: python3.8
