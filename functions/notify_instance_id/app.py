@@ -1,35 +1,37 @@
 import json
 import gzip
 import base64
-import re
 import boto3
 import os
-
-sns = boto3.client('sns', 'ap-northeast-1')
 
 def lambda_handler(event, context):
   try:
     b64data = event['awslogs']['data']
     compressed_data = base64.b64decode(b64data)
     payload_str = gzip.decompress(compressed_data)
+    # 解凍したペイロードをログに記録
     print(payload_str)
     payload = json.loads(payload_str)
 
-    if re.search(r'prod-', payload['logGroup']):
+    channel = ''
+    log_group = payload['logGroup']
+    if log_group.startswith('prod-'):
       channel = 'notification_production'
-    elif re.search(r'stg-', payload['logGroup']):
+    elif log_group.startswith('stg-'):
       channel = 'notification_stage'
-    elif re.search(r'stg2-', payload['logGroup']):
+    elif log_group.startswith('stg2-'):
       channel = 'notification_stage2'
 
-    for event in payload['logEvents']:
-      match = re.search(r"Successfully registered the instance with AWS SSM using Managed instance-id: ([0-9a-z\-]+)$", event['message'])
-      if match:
-        sns.publish(
-          TopicArn = os.environ['SLACK_SNS_TOPIC_ARN'],
-          Message = "SSMエージェント更新成功\n" + f"{payload['logGroup']} にSSMエージェントが登録されました。インスタンスIDは {match[1]} です。",
-          Subject = channel,
-        )
+    if channel != '':
+      sns = boto3.client('sns', 'ap-northeast-1')
+      for event in payload['logEvents']:
+        if "Successfully registered the instance with AWS SSM" in event['message']:
+          instance_id = event['message'].split(' ')[-1]
+          sns.publish(
+            TopicArn = os.environ['SLACK_SNS_TOPIC_ARN'],
+            Message = "SSMエージェント更新成功\n" + f"{log_group} にSSMエージェントが登録されました。インスタンスIDは {instance_id} です。",
+            Subject = channel
+          )
     return True
   except Exception as e:
     print(e)
