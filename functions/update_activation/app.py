@@ -16,7 +16,6 @@ def lambda_handler(event, context):
 
         match = re.search(r'^(prod|stg|stg2)\-', act['Description'])
         stage = match[1]
-        cluster = f'{stage}-cluster-fargate'
 
         res = ssm.create_activation(
           Description=f'{stage}-knockme-activation-fargate-automated',
@@ -40,15 +39,6 @@ def lambda_handler(event, context):
           Overwrite=True,
           DataType='text'
         )
-
-        # ECSのサービスを「新しいデプロイを強制」で更新する
-        services = ecs.list_services(cluster=cluster)
-        for service in services['serviceArns']:
-          ecs.update_service(
-            cluster=cluster,
-            service=service,
-            forceNewDeployment=True
-          )
 
   except Exception as e:
     print(e)
