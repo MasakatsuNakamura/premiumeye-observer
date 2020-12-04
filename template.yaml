@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Knockme Observer
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  KnockmeObserverFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/knockme_observer/
+      Timeout: 60
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Environment:
+        Variables:
+          EMAIL_SNS_TOPIC_ARN: !Ref KnockmeEmailTopic
+          SLACK_SNS_TOPIC_ARN: arn:aws:sns:ap-northeast-1:747245521221:awslambdaBot
+      Events:
+        Production:
+          Type: SNS
+          Properties:
+            Topic: arn:aws:sns:ap-northeast-1:747245521221:notificationProduction
+        Stage:
+          Type: SNS
+          Properties:
+            Topic: arn:aws:sns:ap-northeast-1:747245521221:notificationStage
+        Stage2:
+          Type: SNS
+          Properties:
+            Topic: arn:aws:sns:ap-northeast-1:747245521221:notificationStage2
+      Policies:
+        - CloudWatchLogsReadOnlyAccess
+        - AmazonSNSFullAccess
+
+  KnockmeObserverLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${KnockmeObserverFunction}
+      RetentionInDays: 14
+
+  KnockmeEmailTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: KnockmeEmailTopic
+
+  KnockmeEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: prod_alert@knockme.jp
+      Protocol: email
+      TopicArn: !Ref 'KnockmeEmailTopic'
+
+Outputs:
+  KnockmeObserver:
+    Description: "Knockme Observer Lambda Function ARN"
+    Value: !GetAtt KnockmeObserverFunction.Arn
