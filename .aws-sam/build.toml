@@ -5,3 +5,8 @@
 codeuri = "functions/knockme_observer/"
 runtime = "python3.8"
 functions = ["KnockmeObserverFunction"]
+
+[build_definitions.5caf6238-9a8a-4518-864e-334a054bb2c0]
+codeuri = "functions/notify_instance_id/"
+runtime = "python3.8"
+functions = ["NotifyInstanceIdFunction"]
