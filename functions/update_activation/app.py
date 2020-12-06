@@ -7,18 +7,27 @@ ecs = boto3.client('ecs', 'ap-northeast-1')
 
 def lambda_handler(event, context):
   try:
-    acts = ssm.describe_activations()['ActivationList']
+    acts = []
+    params = {}
+    while True:
+      res = ssm.describe_activations(**params)
+      acts += res['ActivationList']
+      if 'NextToken' in res:
+        params['NextToken'] = res['NextToken']
+      else:
+        break
+
     for act in acts:
       expire_date = datetime.datetime.fromisoformat(act['ExpirationDate'])
-      # 24時間以内にアクティベーションの期限が切れる場合、更新する。
-      if expire_date < datetime.datetime.now() + datetime.timedelta(hours = 24):
+      match = re.search(r'^(prod|stg|stg\d+)-knockme-activation-.*$', act['Description'])
+      # 対象のアクティベーションが24時間以内に失効する場合、更新する。
+      if match and expire_date < datetime.datetime.now() + datetime.timedelta(hours = 24):
         ssm.delete_activation(ActivationId=act['ActivationId'])
-
-        match = re.search(r'^(prod|stg|stg2)\-', act['Description'])
+        activation_name = match[0]
         stage = match[1]
 
         res = ssm.create_activation(
-          Description=f'{stage}-knockme-activation-fargate-automated',
+          Description=activation_name,
           IamRole='service-role/AmazonEC2RunCommandRoleForManagedInstances',
           RegistrationLimit=1000,
           ExpirationDate=datetime.datetime.now() + datetime.timedelta(days = 29)
