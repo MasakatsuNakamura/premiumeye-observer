@@ -72,11 +72,10 @@ Resources:
             - Effect: Allow
               Action:
                 - 'ssm:DescribeActivations'
+                - 'ssm:DescribeInstanceInformation'
                 - 'ssm:PutParameter'
                 - 'ssm:CreateActivation'
                 - 'ssm:DeleteActivation'
-                - 'ecs:ListServices'
-                - 'ecs:UpdateService'
               Resource: '*'
             - Effect: Allow
               Action:
