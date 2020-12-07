@@ -43,10 +43,11 @@ def activations():
 def lambda_handler(event, context):
   try:
     for act in activations():
-      expire_date = datetime.datetime.fromisoformat(act['ExpirationDate'])
+      expire_date = act['ExpirationDate'].astimezone(datetime.timezone.utc)
       match = re.search(r'^(prod|stg|stg\d+)-knockme-activation-.*$', act['Description'])
       # 対象のアクティベーションが24時間以内に失効する場合、更新する。
-      if match and expire_date < datetime.datetime.now() + datetime.timedelta(hours = 24):
+      if match and expire_date < datetime.datetime.now().astimezone(datetime.timezone.utc) + datetime.timedelta(hours = 24):
+        print(act)
         # 当該アクティベーションに紐づくインスタンスがない場合、アクティベーションを削除する
         if not instance_avairable(act['ActivationId']):
           ssm.delete_activation(ActivationId=act['ActivationId'])
