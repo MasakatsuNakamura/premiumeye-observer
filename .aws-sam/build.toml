@@ -10,3 +10,8 @@ functions = ["KnockmeObserverFunction"]
 codeuri = "functions/notify_instance_id/"
 runtime = "python3.8"
 functions = ["NotifyInstanceIdFunction"]
+
+[build_definitions.851af46e-cdc9-469e-a6a9-4b8b07bb195b]
+codeuri = "functions/update_activation/"
+runtime = "python3.8"
+functions = ["UpdateActivationFunction"]
