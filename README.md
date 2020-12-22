@@ -48,7 +48,7 @@ $ sam local invoke 関数名 -e イベント.json
 (テストが実装されているのはsummarize_process_logs関数のみです)
 
 ```sh
-$ sh integration_test.sh
+$ sh tests/integration_test.sh
 ```
 
 # 含まれる関数とその機能
