@@ -7,7 +7,28 @@ Globals:
   Function:
     Timeout: 3
 
+Parameters:
+  Stage:
+    # Default: stage2
+    Default: stage
+    # Default: production
+
 Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub knockme-direct-upload-${Stage}
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
   KnockmeObserverFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -86,6 +107,38 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/${UpdateActivationFunction}
+
+  SummarizeProcessLogsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/summarize_process_logs/
+      Environment:
+        Variables:
+          LOCALSTACK_ENDPOINT: http://localstack:4566
+      Timeout: 60
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref S3Bucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: process_logs/
+                  - Name: suffix
+                    Value: .json.gz
+      Policies:
+        - S3CrudPolicy:
+            BucketName: knockme-direct-upload-stage
+
+  SummarizeProcessLogsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${SummarizeProcessLogsFunction}
 
   NotifyInstanceIdFunction:
     Type: AWS::Serverless::Function
