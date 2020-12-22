@@ -8,16 +8,28 @@ Globals:
     Timeout: 3
 
 Parameters:
-  Stage:
-    # Default: stage2
-    Default: stage
-    # Default: production
+ Environment:
+   Type: String
+   AllowedValues:
+   - stage2 # ステージング環境2
+   - stage # ステージング環境
+   - production # 本番環境
+   Default: stage
+
+Mappings:
+ EnvironmentMap:
+   stage2:
+     s3BucketName: knockme-direct-upload-stage2
+   stage:
+     s3BucketName: knockme-direct-upload-stage
+   production:
+     s3BucketName: knockme-direct-upload-production
 
 Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub knockme-direct-upload-${Stage}
+      BucketName: !FindInMap [ EnvironmentMap, !Ref Environment, s3BucketName ]
       AccessControl: Private
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
