@@ -58,6 +58,7 @@ def lambda_handler(event, context):
           'process_name': process,
           'percentage': count * 100.0 / logs_count
         })
+      summary['process_rates'].sort(key=lambda x: x['percentage'], reverse=True)
       upload_file = gzip.compress(bytes(json.dumps(summary, ensure_ascii=False, indent=2), 'utf-8'))
       s3.put_object(Bucket=bucket, Key=m['prefix'] + "summary.json.gz", Body=upload_file)
   return "Done"
