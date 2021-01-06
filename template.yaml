@@ -8,28 +8,45 @@ Globals:
     Timeout: 3
 
 Parameters:
- Environment:
-   Type: String
-   AllowedValues:
-   - stage2 # ステージング環境2
-   - stage # ステージング環境
-   - production # 本番環境
-   Default: stage
-
-Mappings:
- EnvironmentMap:
-   stage2:
-     s3BucketName: knockme-direct-upload-stage2
-   stage:
-     s3BucketName: knockme-direct-upload-stage
-   production:
-     s3BucketName: knockme-direct-upload-production
+  Endpoint:
+    Type: String
+    Default: ''
 
 Resources:
-  S3Bucket:
+  S3BucketProd:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !FindInMap [ EnvironmentMap, !Ref Environment, s3BucketName ]
+      BucketName: knockme-direct-upload-production
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  S3BucketStage:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: knockme-direct-upload-stage
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  S3BucketStage2:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: knockme-direct-upload-stage2
       AccessControl: Private
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
@@ -124,14 +141,41 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/summarize_process_logs/
+      Environment:
+        Variables:
+          LOCALSTACK_ENDPOINT: !Ref Endpoint
       Timeout: 60
       Handler: app.lambda_handler
       Runtime: python3.8
       Events:
-        S3Event:
+        S3EventProd:
           Type: S3
           Properties:
-            Bucket: !Ref S3Bucket
+            Bucket: !Ref S3BucketProd
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: process_logs/
+                  - Name: suffix
+                    Value: .json.gz
+        S3EventStage:
+          Type: S3
+          Properties:
+            Bucket: !Ref S3BucketStage
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: process_logs/
+                  - Name: suffix
+                    Value: .json.gz
+        S3EventStage2:
+          Type: S3
+          Properties:
+            Bucket: !Ref S3BucketStage2
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:

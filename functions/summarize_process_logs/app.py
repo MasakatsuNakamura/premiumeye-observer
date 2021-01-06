@@ -7,7 +7,7 @@ import os
 import re
 import gzip
 
-if 'LOCALSTACK_ENDPOINT' in os.environ:
+if 'LOCALSTACK_ENDPOINT' in os.environ and os.environ['LOCALSTACK_ENDPOINT'] != '':
   endpoint_url = { 'endpoint_url': os.environ['LOCALSTACK_ENDPOINT'] }
 else:
   endpoint_url = {}
