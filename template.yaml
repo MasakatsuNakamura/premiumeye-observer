@@ -124,9 +124,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/summarize_process_logs/
-      Environment:
-        Variables:
-          LOCALSTACK_ENDPOINT: http://localstack:4566
       Timeout: 60
       Handler: app.lambda_handler
       Runtime: python3.8

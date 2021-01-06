@@ -23,6 +23,6 @@ cat << EOS2 | gzip -c | docker-compose exec -T localstack aws --endpoint $LOCALS
   "processes": ["aaaa"]
 }
 EOS2
-sam local invoke SummarizeProcessLogsFunction --docker-network knockme-observer_default -e events/s3_put_event.json
+sam local invoke --env-vars local_env.json SummarizeProcessLogsFunction --docker-network knockme-observer_default -e events/s3_put_event.json
 echo
 docker-compose exec -T localstack aws --endpoint $LOCALSTACK_ENDPOINT s3 cp s3://$S3_BUCKET/process_logs/1/2020-12-22/summary.json.gz - | gzip -cd

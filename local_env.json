@@ -1,0 +1,5 @@
+{
+  "summarize_process_logs": {
+    "LOCALSTACK_ENDPOINT": "http://localstack:4566"
+  }
+}
