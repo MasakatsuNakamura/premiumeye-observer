@@ -7,7 +7,7 @@ import os
 import re
 import gzip
 
-if 'LOCALSTACK_ENDPOINT' in os.environ:
+if 'LOCALSTACK_ENDPOINT' in os.environ and os.environ['LOCALSTACK_ENDPOINT'] != '':
   endpoint_url = { 'endpoint_url': os.environ['LOCALSTACK_ENDPOINT'] }
 else:
   endpoint_url = {}
@@ -21,8 +21,8 @@ def lambda_handler(event, context):
   for record in event['Records']:
     bucket = record['s3']['bucket']['name']
     key = record['s3']['object']['key']
-    if m := re.search(r'^(?P<prefix>process_logs/\d+/\d{4}-\d{2}-\d{2}/)\d{6}/[^\.]+.json.gz$', key):
-      params = { 'Bucket': bucket, 'Prefix': m['prefix'] }
+    if m := re.search(r'^process_logs/(?P<id_date>\d+/\d{4}-\d{2}-\d{2})/\d{6}/[^\.]+.json.gz$', key):
+      params = { 'Bucket': bucket, 'Prefix': 'process_logs/' + m['id_date'] + '/' }
       keys = []
       while True:
         res = s3.list_objects(**params)
@@ -60,5 +60,5 @@ def lambda_handler(event, context):
         })
       summary['process_rates'].sort(key=lambda x: (-x['percentage'], x['process_name'].lower().encode('utf-8')))
       upload_file = gzip.compress(bytes(json.dumps(summary, ensure_ascii=False, indent=2), 'utf-8'))
-      s3.put_object(Bucket=bucket, Key=m['prefix'] + "summary.json.gz", Body=upload_file)
+      s3.put_object(Bucket=bucket, Key='process_logs_summary/' + m["id_date"] + '.json.gz', Body=upload_file)
   return "Done"
