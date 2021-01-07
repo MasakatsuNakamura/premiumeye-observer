@@ -27,8 +27,6 @@ $ brew install aws-sam-cli
 ```sh
 $ sam build
 $ sam deploy  # Cloudformationスタックを確認後、yを押す必要があります
-$ sam deploy --parameter-overrides Environment=production # 本番デプロイ
-$ sam deploy --parameter-overrides Environment=stage2 # ステージング2デプロイ
 ```
 
 # プロジェクトのアンインストール方法
