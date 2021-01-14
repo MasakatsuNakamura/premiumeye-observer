@@ -110,39 +110,6 @@ Resources:
       TopicArn: !Ref 'KnockmeEmailTopic'
     Condition: IsProduction
 
-  UpdateActivationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/update_activation/
-      Timeout: 60
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Events:
-        Rule:
-          Type: Schedule
-          Properties:
-            Schedule: cron(0 15 ? * * *)
-      Policies:
-        - Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'ssm:DescribeActivations'
-                - 'ssm:DescribeInstanceInformation'
-                - 'ssm:PutParameter'
-                - 'ssm:CreateActivation'
-                - 'ssm:DeleteActivation'
-              Resource: '*'
-            - Effect: Allow
-              Action:
-                - 'iam:PassRole'
-              Resource: 'arn:aws:iam::747245521221:role/service-role/AmazonEC2RunCommandRoleForManagedInstances'
-
-  UpdateActivationLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${UpdateActivationFunction}
-
   SummarizeProcessLogsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -176,57 +143,10 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/lambda/${SummarizeProcessLogsFunction}
 
-  NotifyInstanceIdFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/notify_instance_id/
-      Timeout: 60
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Environment:
-        Variables:
-          SLACK_SNS_TOPIC_ARN: arn:aws:sns:ap-northeast-1:747245521221:awslambdaBot
-      Events:
-        ProductionWeb:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/prod-web-task-fargate-1_0_0
-            FilterPattern: Successfully registered the instance with AWS SSM
-        ProductionWorker:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/prod-worker-fargate-1_0_0
-            FilterPattern: Successfully registered the instance with AWS SSM
-        StageWeb:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/stg-web-task-fargate
-            FilterPattern: Successfully registered the instance with AWS SSM
-        StageWorker:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/stg-worker-fargate
-            FilterPattern: Successfully registered the instance with AWS SSM
-        Stage2Web:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/stg2-web-task-fargate
-            FilterPattern: Successfully registered the instance with AWS SSM
-        Stage2Worker:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/stg2-worker-fargate
-            FilterPattern: Successfully registered the instance with AWS SSM
-      Policies:
-        - AmazonSNSFullAccess
-
-  NotifyInstanceIdLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${NotifyInstanceIdFunction}
-      RetentionInDays: 14
-
 Outputs:
   KnockmeObserver:
     Description: "Knockme Observer Lambda Function ARN"
     Value: !GetAtt KnockmeObserverFunction.Arn
+  SummarizeProcessLogs:
+    Description: "Summarize Process Logs Lambda Function ARN"
+    Value: !GetAtt SummarizeProcessLogsFunction.Arn
