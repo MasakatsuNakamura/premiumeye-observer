@@ -20,7 +20,7 @@ codeuri = "functions/summarize_process_logs/"
 runtime = "python3.8"
 source_md5 = ""
 packagetype = "Zip"
-functions = ["SummarizeProcessLogsFunction", "SummarizeProcessLogsStageFunction", "SummarizeProcessLogsStage2Function"]
+functions = ["SummarizeProcessLogsFunction"]
 
 [function_build_definitions.4d394b24-d5da-40c7-b8d9-eefa0174db65]
 codeuri = "functions/notify_instance_id/"

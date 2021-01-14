@@ -61,7 +61,7 @@ def lambda_handler(event, context):
   message = '\n'.join(e['message'] for e in events)
 
   #SNS Publish(メール送信)
-  if channel == 'notification_production':
+  if os.environ['EMAIL_SNS_TOPIC_ARN'] != '' and channel == 'notification_production':
     sns.publish(
       TopicArn = os.environ['EMAIL_SNS_TOPIC_ARN'],
       Message = message,
