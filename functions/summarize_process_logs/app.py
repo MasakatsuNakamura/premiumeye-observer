@@ -46,7 +46,7 @@ def lambda_handler(event, context):
             last_recorded_at = process_log['recorded_at']
         else:
           last_recorded_at = process_log['recorded_at']
-        logs_count += 1
+        logs_count += len(process_log['processes'])
         for process in process_log['processes']:
           if process in process_count:
             process_count[process] += 1
