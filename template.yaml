@@ -11,12 +11,21 @@ Parameters:
   Endpoint:
     Type: String
     Default: ''
+  S3BucketNameProd:
+    Type: String
+    Default: knockme-direct-upload-production
+  S3BucketNameStage:
+    Type: String
+    Default: knockme-direct-upload-stage
+  S3BucketNameStage2:
+    Type: String
+    Default: knockme-direct-upload-stage2
 
 Resources:
   S3BucketProd:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: knockme-direct-upload-production
+      BucketName: !Sub S3BucketNameProd
       AccessControl: Private
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
@@ -40,7 +49,7 @@ Resources:
   S3BucketStage:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: knockme-direct-upload-stage
+      BucketName: !Sub S3BucketNameStage
       AccessControl: Private
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
@@ -64,7 +73,7 @@ Resources:
   S3BucketStage2:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: knockme-direct-upload-stage2
+      BucketName: !Sub S3BucketNameStage2
       AccessControl: Private
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
@@ -171,6 +180,7 @@ Resources:
       Environment:
         Variables:
           LOCALSTACK_ENDPOINT: !Ref Endpoint
+          ENVIRONMENT: production
       Timeout: 60
       Handler: app.lambda_handler
       Runtime: python3.8
@@ -187,6 +197,27 @@ Resources:
                     Value: process_logs/
                   - Name: suffix
                     Value: .json.gz
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub S3BucketNameProd
+
+  SummarizeProcessLogsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${SummarizeProcessLogsFunction}
+
+  SummarizeProcessLogsStageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/summarize_process_logs/
+      Environment:
+        Variables:
+          LOCALSTACK_ENDPOINT: !Ref Endpoint
+          ENVIRONMENT: stage
+      Timeout: 60
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Events:
         S3EventStage:
           Type: S3
           Properties:
@@ -199,7 +230,28 @@ Resources:
                     Value: process_logs/
                   - Name: suffix
                     Value: .json.gz
-        S3EventStage2:
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub S3BucketNameStage
+
+  SummarizeProcessLogsStageLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${SummarizeProcessLogsStageFunction}
+
+  SummarizeProcessLogsStage2Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/summarize_process_logs/
+      Environment:
+        Variables:
+          LOCALSTACK_ENDPOINT: !Ref Endpoint
+          ENVIRONMENT: stage2
+      Timeout: 60
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Events:
+        S3EventStage:
           Type: S3
           Properties:
             Bucket: !Ref S3BucketStage2
@@ -213,12 +265,12 @@ Resources:
                     Value: .json.gz
       Policies:
         - S3CrudPolicy:
-            BucketName: knockme-direct-upload-stage
+            BucketName: !Sub S3BucketNameStage2
 
-  SummarizeProcessLogsLogGroup:
+  SummarizeProcessLogsStage2LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${SummarizeProcessLogsFunction}
+      LogGroupName: !Sub /aws/lambda/${SummarizeProcessLogsStage2Function}
 
   NotifyInstanceIdFunction:
     Type: AWS::Serverless::Function
