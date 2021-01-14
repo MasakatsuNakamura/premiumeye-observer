@@ -1,4 +1,5 @@
 #!/bin/sh
+sam build
 docker-compose up -d
 export LOCALSTACK_ENDPOINT=http://localstack:4566
 export S3_BUCKET=direct-upload

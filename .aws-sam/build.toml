@@ -8,25 +8,11 @@ source_md5 = ""
 packagetype = "Zip"
 functions = ["KnockmeObserverFunction"]
 
-[function_build_definitions.83fb4a35-8ee9-48c8-a464-fe1dbb2c5bce]
-codeuri = "functions/update_activation/"
-runtime = "python3.8"
-source_md5 = ""
-packagetype = "Zip"
-functions = ["UpdateActivationFunction"]
-
 [function_build_definitions.6dd8af39-637b-46a9-8d1b-3a31fe75c363]
 codeuri = "functions/summarize_process_logs/"
 runtime = "python3.8"
 source_md5 = ""
 packagetype = "Zip"
 functions = ["SummarizeProcessLogsFunction"]
-
-[function_build_definitions.4d394b24-d5da-40c7-b8d9-eefa0174db65]
-codeuri = "functions/notify_instance_id/"
-runtime = "python3.8"
-source_md5 = ""
-packagetype = "Zip"
-functions = ["NotifyInstanceIdFunction"]
 
 [layer_build_definitions]

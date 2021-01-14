@@ -24,20 +24,33 @@ $ brew install aws-sam-cli
 
 # プロジェクトのデプロイ方法
 
+`--stack-name`の打ち間違いに注意してください。入力をミスすると新しいCloudFormationスタックが作成されます。
+
 ```sh
-$ sam build
-$ sam deploy  # Cloudformationスタックを確認後、yを押す必要があります
+$ sam build   # 共通
+# 本番デプロイ
+$ sam deploy --parameter-overrides Environment=production --stack-name knockme-observer  # Cloudformationスタックを確認後、yを押す必要があります
+# ステージングデプロイ
+$ sam deploy --parameter-overrides Environment=stage --stack-name knockme-observer-stage  # Cloudformationスタックを確認後、yを押す必要があります
+# ステージング2デプロイ
+$ sam deploy --parameter-overrides Environment=stage2 --stack-name knockme-observer-stage2  # Cloudformationスタックを確認後、yを押す必要があります
 ```
 
 # プロジェクトのアンインストール方法
 
 ```sh
+# 本番
 $ aws cloudformation delete-stack --stack-name knockme-observer
+# ステージング
+$ aws cloudformation delete-stack --stack-name knockme-observer-stage
+# ステージング2
+$ aws cloudformation delete-stack --stack-name knockme-observer-sgate2
 ```
 
 # ローカルでのLambdaの動作確認方法
 
 ```sh
+$ sam build
 $ sam local invoke 関数名 -e イベント.json
 ```
 
@@ -54,14 +67,6 @@ $ sh tests/integration_test.sh
 ## knockme_observer
 
 CLoudWatch AlarmのトリガをもとにCloudWatch Logsの関連ログを取得し、SNSで発信する関数
-
-## notify_instance_id
-
-SSMエージェントが登録された際に、登録されたことをSlackで通知する関数
-
-## update_activation
-
-SSMのハイブリッドアクティベーションの有効期限が切れている場合、アクティベーションを自動で再作成する関数
 
 ## summarize_process_logs
 

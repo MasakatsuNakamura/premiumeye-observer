@@ -8,39 +8,40 @@ Globals:
     Timeout: 3
 
 Parameters:
-  Endpoint:
+  Environment:
     Type: String
-    Default: ''
+    AllowedValues:
+      - production
+      - stage
+      - stage2
+      - development
+    Default: development
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, "production"]
+  IsDevelopment: !Equals [Environment, "development"]
+  NotDevelopment: !Not [!Equals [Environment, "development"]]
+
+Mappings:
+  EnvironmentMap:
+    production:
+      S3BucketName: knockme-direct-upload
+      EnvironmentCamel: Production
+    stage:
+      S3BucketName: knockme-direct-upload-stage
+      EnvironmentCamel: Stage
+    stage2:
+      S3BucketName: knockme-direct-upload-stage2
+      EnvironmentCamel: Stage2
+    development:
+      S3BucketName: direct-upload
+      EnvironmentCamel: Development
 
 Resources:
-  S3BucketProd:
+  S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: knockme-direct-upload-production
-      AccessControl: Private
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: True
-        BlockPublicPolicy: True
-        IgnorePublicAcls: True
-        RestrictPublicBuckets: True
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      CorsConfiguration:
-        CorsRules:
-          - Id: prodCORSRule
-            AllowedHeaders:
-              - '*'
-            AllowedMethods:
-              - PUT
-            AllowedOrigins:
-              - '*'
-
-  S3BucketStage:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: knockme-direct-upload-stage
+      BucketName: !FindInMap [ EnvironmentMap, !Ref Environment, S3BucketName]
       AccessControl: Private
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
@@ -60,30 +61,7 @@ Resources:
               - PUT
             AllowedOrigins:
               - '*'
-
-  S3BucketStage2:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: knockme-direct-upload-stage2
-      AccessControl: Private
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: True
-        BlockPublicPolicy: True
-        IgnorePublicAcls: True
-        RestrictPublicBuckets: True
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      CorsConfiguration:
-        CorsRules:
-          - Id: stage2CORSRule
-            AllowedHeaders:
-              - '*'
-            AllowedMethods:
-              - PUT
-            AllowedOrigins:
-              - '*'
+    Condition: NotDevelopment
 
   KnockmeObserverFunction:
     Type: AWS::Serverless::Function
@@ -94,21 +72,17 @@ Resources:
       Runtime: python3.8
       Environment:
         Variables:
-          EMAIL_SNS_TOPIC_ARN: !Ref KnockmeEmailTopic
-          SLACK_SNS_TOPIC_ARN: arn:aws:sns:ap-northeast-1:747245521221:awslambdaBot
+          LOCALSTACK_ENDPOINT: !If [ "IsDevelopment", "http://localhost:4566", ""]
+          EMAIL_SNS_TOPIC_ARN: !If [ "IsProduction", !Ref KnockmeEmailTopic, ""]
+          SLACK_SNS_TOPIC_ARN: !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:awslambdaBot
       Events:
-        Production:
+        SNSTopic:
           Type: SNS
           Properties:
-            Topic: arn:aws:sns:ap-northeast-1:747245521221:notificationProduction
-        Stage:
-          Type: SNS
-          Properties:
-            Topic: arn:aws:sns:ap-northeast-1:747245521221:notificationStage
-        Stage2:
-          Type: SNS
-          Properties:
-            Topic: arn:aws:sns:ap-northeast-1:747245521221:notificationStage2
+            Topic: 
+              Fn::Sub:
+                - arn:aws:sns:${AWS::Region}:${AWS::AccountId}:notification${Env}
+                - Env: !FindInMap [ EnvironmentMap, !Ref Environment, EnvironmentCamel]
       Policies:
         - CloudWatchLogsReadOnlyAccess
         - AmazonSNSFullAccess
@@ -122,7 +96,11 @@ Resources:
   KnockmeEmailTopic:
     Type: AWS::SNS::Topic
     Properties: 
-      TopicName: KnockmeEmailTopic
+      TopicName: 
+        Fn::Sub:
+          - KnockmeEmailTopic${Env}
+          - Env: !FindInMap [ EnvironmentMap, !Ref Environment, EnvironmentCamel]
+    Condition: IsProduction
 
   KnockmeEmailSubscription:
     Type: AWS::SNS::Subscription
@@ -130,39 +108,7 @@ Resources:
       Endpoint: prod_alert@knockme.jp
       Protocol: email
       TopicArn: !Ref 'KnockmeEmailTopic'
-
-  UpdateActivationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/update_activation/
-      Timeout: 60
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Events:
-        Rule:
-          Type: Schedule
-          Properties:
-            Schedule: cron(0 15 ? * * *)
-      Policies:
-        - Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'ssm:DescribeActivations'
-                - 'ssm:DescribeInstanceInformation'
-                - 'ssm:PutParameter'
-                - 'ssm:CreateActivation'
-                - 'ssm:DeleteActivation'
-              Resource: '*'
-            - Effect: Allow
-              Action:
-                - 'iam:PassRole'
-              Resource: 'arn:aws:iam::747245521221:role/service-role/AmazonEC2RunCommandRoleForManagedInstances'
-
-  UpdateActivationLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${UpdateActivationFunction}
+    Condition: IsProduction
 
   SummarizeProcessLogsFunction:
     Type: AWS::Serverless::Function
@@ -170,39 +116,16 @@ Resources:
       CodeUri: functions/summarize_process_logs/
       Environment:
         Variables:
-          LOCALSTACK_ENDPOINT: !Ref Endpoint
+          LOCALSTACK_ENDPOINT: !If [ "IsDevelopment", "http://localhost:4566", ""]
+          ENVIRONMENT: !Ref Environment
       Timeout: 60
       Handler: app.lambda_handler
       Runtime: python3.8
       Events:
-        S3EventProd:
+        S3Event:
           Type: S3
           Properties:
-            Bucket: !Ref S3BucketProd
-            Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: prefix
-                    Value: process_logs/
-                  - Name: suffix
-                    Value: .json.gz
-        S3EventStage:
-          Type: S3
-          Properties:
-            Bucket: !Ref S3BucketStage
-            Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: prefix
-                    Value: process_logs/
-                  - Name: suffix
-                    Value: .json.gz
-        S3EventStage2:
-          Type: S3
-          Properties:
-            Bucket: !Ref S3BucketStage2
+            Bucket: !Ref S3Bucket
             Events: s3:ObjectCreated:*
             Filter:
               S3Key:
@@ -213,64 +136,17 @@ Resources:
                     Value: .json.gz
       Policies:
         - S3CrudPolicy:
-            BucketName: knockme-direct-upload-stage
+            BucketName: !FindInMap [ EnvironmentMap, !Ref Environment, S3BucketName]
 
   SummarizeProcessLogsLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/lambda/${SummarizeProcessLogsFunction}
 
-  NotifyInstanceIdFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/notify_instance_id/
-      Timeout: 60
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Environment:
-        Variables:
-          SLACK_SNS_TOPIC_ARN: arn:aws:sns:ap-northeast-1:747245521221:awslambdaBot
-      Events:
-        ProductionWeb:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/prod-web-task-fargate-1_0_0
-            FilterPattern: Successfully registered the instance with AWS SSM
-        ProductionWorker:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/prod-worker-fargate-1_0_0
-            FilterPattern: Successfully registered the instance with AWS SSM
-        StageWeb:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/stg-web-task-fargate
-            FilterPattern: Successfully registered the instance with AWS SSM
-        StageWorker:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/stg-worker-fargate
-            FilterPattern: Successfully registered the instance with AWS SSM
-        Stage2Web:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/stg2-web-task-fargate
-            FilterPattern: Successfully registered the instance with AWS SSM
-        Stage2Worker:
-          Type: CloudWatchLogs
-          Properties:
-            LogGroupName: /ecs/stg2-worker-fargate
-            FilterPattern: Successfully registered the instance with AWS SSM
-      Policies:
-        - AmazonSNSFullAccess
-
-  NotifyInstanceIdLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${NotifyInstanceIdFunction}
-      RetentionInDays: 14
-
 Outputs:
   KnockmeObserver:
     Description: "Knockme Observer Lambda Function ARN"
     Value: !GetAtt KnockmeObserverFunction.Arn
+  SummarizeProcessLogs:
+    Description: "Summarize Process Logs Lambda Function ARN"
+    Value: !GetAtt SummarizeProcessLogsFunction.Arn
