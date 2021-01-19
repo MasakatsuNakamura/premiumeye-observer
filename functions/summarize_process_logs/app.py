@@ -33,25 +33,29 @@ def lambda_handler(event, context):
           params['Marker'] = res['NextMarker']
         else:
           break
+      keys = [key for key in keys if re.match(r'\.json\.gz$', key)]
       process_count = {}
       last_recorded_at = None
       logs_count = 0
       for key in keys:
-        with gzip.open(s3.get_object(Bucket=bucket, Key=key)['Body'], 'rt') as f:
-          process_log = json.loads(f.read())
-        if 'recorded_at' not in process_log or 'processes' not in process_log:
-          continue
-        if last_recorded_at:
-          if datetime.datetime.fromisoformat(last_recorded_at) < datetime.datetime.fromisoformat(process_log['recorded_at']):
-            last_recorded_at = process_log['recorded_at']
-        else:
-          last_recorded_at = process_log['recorded_at']
-        logs_count += len(process_log['processes'])
-        for process in process_log['processes']:
-          if process in process_count:
-            process_count[process] += 1
+        try:
+          with gzip.open(s3.get_object(Bucket=bucket, Key=key)['Body'], 'rt') as f:
+            process_log = json.loads(f.read())
+          if 'recorded_at' not in process_log or 'processes' not in process_log:
+            continue
+          if last_recorded_at:
+            if datetime.datetime.fromisoformat(last_recorded_at) < datetime.datetime.fromisoformat(process_log['recorded_at']):
+              last_recorded_at = process_log['recorded_at']
           else:
-            process_count[process] = 1
+            last_recorded_at = process_log['recorded_at']
+          logs_count += len(process_log['processes'])
+          for process in process_log['processes']:
+            if process in process_count:
+              process_count[process] += 1
+            else:
+              process_count[process] = 1
+        except JSONDecodeError:
+          pass
       summary = { 'process_rates': [], 'last_recorded_at': last_recorded_at }
       for process, count in process_count.items():
         summary['process_rates'].append({
