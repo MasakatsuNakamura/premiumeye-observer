@@ -54,7 +54,7 @@ def lambda_handler(event, context):
               process_count[process] += 1
             else:
               process_count[process] = 1
-        except JSONDecodeError:
+        except json.decoder.JSONDecodeError:
           pass
       summary = { 'process_rates': [], 'last_recorded_at': last_recorded_at }
       for process, count in process_count.items():
