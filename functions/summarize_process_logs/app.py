@@ -6,6 +6,7 @@ import datetime
 import os
 import re
 import gzip
+import traceback
 
 if 'LOCALSTACK_ENDPOINT' in os.environ and os.environ['LOCALSTACK_ENDPOINT'] != '':
   endpoint_url = { 'endpoint_url': os.environ['LOCALSTACK_ENDPOINT'] }
@@ -21,6 +22,7 @@ def lambda_handler(event, context):
   for record in event['Records']:
     bucket = record['s3']['bucket']['name']
     key = record['s3']['object']['key']
+    print(f'receive event put s3://{bucket}/{key}')
     if m := re.search(r'^process_logs/(?P<id_date>\d+/\d{4}-\d{2}-\d{2})/\d{6}/[^\.]+.json.gz$', key):
       params = { 'Bucket': bucket, 'Prefix': 'process_logs/' + m['id_date'] + '/' }
       keys = []
@@ -33,11 +35,12 @@ def lambda_handler(event, context):
           params['Marker'] = res['NextMarker']
         else:
           break
-      keys = [key for key in keys if re.match(r'\.json\.gz$', key)]
+      keys = [key for key in keys if key.endswith('.json.gz')]
       process_count = {}
       last_recorded_at = None
       logs_count = 0
       for key in keys:
+        print(f'processing s3://{bucket}/{key} ...')
         try:
           with gzip.open(s3.get_object(Bucket=bucket, Key=key)['Body'], 'rt') as f:
             process_log = json.loads(f.read())
@@ -54,8 +57,8 @@ def lambda_handler(event, context):
               process_count[process] += 1
             else:
               process_count[process] = 1
-        except json.decoder.JSONDecodeError:
-          pass
+        except:
+          traceback.print_exc()
       summary = { 'process_rates': [], 'last_recorded_at': last_recorded_at }
       for process, count in process_count.items():
         summary['process_rates'].append({
