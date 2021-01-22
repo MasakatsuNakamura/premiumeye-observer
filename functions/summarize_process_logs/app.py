@@ -60,12 +60,15 @@ def lambda_handler(event, context):
         except:
           traceback.print_exc()
       summary = { 'process_rates': [], 'last_recorded_at': last_recorded_at }
-      for process, count in process_count.items():
-        summary['process_rates'].append({
-          'process_name': process,
-          'percentage': count * 100.0 / logs_count
-        })
-      summary['process_rates'].sort(key=lambda x: (-x['percentage'], x['process_name'].lower().encode('utf-8')))
-      upload_file = gzip.compress(bytes(json.dumps(summary, ensure_ascii=False, indent=2), 'utf-8'))
-      s3.put_object(Bucket=bucket, Key='process_logs_summary/' + m["id_date"] + '.json.gz', Body=upload_file)
-  return "Done"
+      if len(process_count) > 0:
+        for process, count in process_count.items():
+          summary['process_rates'].append({
+            'process_name': process,
+            'percentage': count * 100.0 / logs_count
+          })
+        summary['process_rates'].sort(key=lambda x: (-x['percentage'], x['process_name'].lower().encode('utf-8')))
+        upload_file = gzip.compress(bytes(json.dumps(summary, ensure_ascii=False, indent=2), 'utf-8'))
+        s3.put_object(Bucket=bucket, Key='process_logs_summary/' + m["id_date"] + '.json.gz', Body=upload_file)
+        return "Done"
+      else
+        return "No Summary"
