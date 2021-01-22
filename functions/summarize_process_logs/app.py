@@ -60,7 +60,7 @@ def lambda_handler(event, context):
         except:
           traceback.print_exc()
       summary = { 'process_rates': [], 'last_recorded_at': last_recorded_at }
-      if logs_count > 0:
+      if last_recorded_at is not None:
         for process, count in process_count.items():
           summary['process_rates'].append({
             'process_name': process,
