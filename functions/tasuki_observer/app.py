@@ -22,7 +22,7 @@ def post_slack(message):
   send_text = json.dumps(send_data)
   request = urllib.request.Request(
     slack_webhook_url(),
-    data=send_text.encode('utf-8'), 
+    data=send_text.encode('utf-8'),
     method="POST"
   )
   with urllib.request.urlopen(request) as response:

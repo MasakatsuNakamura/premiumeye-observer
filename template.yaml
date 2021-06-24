@@ -8,9 +8,12 @@ Globals:
     Timeout: 3
 
 Parameters:
-  SourceLogGroup:
+  SourceLogGroupStaging:
     Type: "String"
     Default: "/ecs/tasuki-land-staging"
+  SourceLogGroup:
+    Type: "String"
+    Default: "/ecs/tasuki-land"
 
 Resources:
   TasukiObserverFunction:
@@ -46,12 +49,29 @@ Resources:
       Protocol: email
       TopicArn: !Ref TasukiEmailTopic
 
-  TasukiLandStagingSubscriptionFilter:
+  KouEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: kou@tasukicorp.co.jp
+      Protocol: email
+      TopicArn: !Ref TasukiEmailTopic
+
+  TasukiLandSubscriptionFilter:
     DependsOn:
       - LambdaInvokePermission
     Type: "AWS::Logs::SubscriptionFilter"
     Properties:
       LogGroupName: !Ref SourceLogGroup
+      FilterPattern: |
+        [str = "/*" || str = "*ERROR*" || str = "*WARN*"]
+      DestinationArn: !GetAtt TasukiObserverFunction.Arn
+
+  TasukiLandStagingSubscriptionFilter:
+    DependsOn:
+      - LambdaInvokePermissionStaging
+    Type: "AWS::Logs::SubscriptionFilter"
+    Properties:
+      LogGroupName: !Ref SourceLogGroupStaging
       FilterPattern: |
         [str = "/*" || str = "*ERROR*" || str = "*WARN*"]
       DestinationArn: !GetAtt TasukiObserverFunction.Arn
@@ -64,6 +84,15 @@ Resources:
       Principal: !Sub "logs.amazonaws.com"
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${SourceLogGroup}:*"
+
+  LambdaInvokePermissionStaging:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !Ref TasukiObserverFunction
+      Action: "lambda:InvokeFunction"
+      Principal: !Sub "logs.amazonaws.com"
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${SourceLogGroupStaging}:*"
 
 Outputs:
   TasukiObserver:

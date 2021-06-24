@@ -8,3 +8,4 @@ s3_prefix = "tasuki-observer"
 region = "ap-northeast-1"
 confirm_changeset = false
 capabilities = "CAPABILITY_IAM"
+parameter_overrides = "SourceLogGroupStaging=\"/ecs/tasuki-land-staging\" SourceLogGroup=\"/ecs/tasuki-land\""
