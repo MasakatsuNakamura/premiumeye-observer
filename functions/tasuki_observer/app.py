@@ -4,6 +4,29 @@ import base64
 import gzip
 import boto3
 import os
+import urllib.request
+
+def slack_webhook_url():
+  ssm = boto3.client('ssm')
+
+  response = ssm.get_parameter(
+      Name='/TASUKI_LAND/SLACK_WEBHOOK_URL',
+      WithDecryption=True
+  )
+  return response['Parameter']['Value']
+
+def post_slack(message):
+  send_data = {
+    "text": message,
+  }
+  send_text = json.dumps(send_data)
+  request = urllib.request.Request(
+    slack_webhook_url(),
+    data=send_text.encode('utf-8'), 
+    method="POST"
+  )
+  with urllib.request.urlopen(request) as response:
+    response.read().decode('utf-8')
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -33,3 +56,5 @@ def lambda_handler(event, context):
     Subject = subject,
     Message = json.dumps(message)
   )
+
+  post_slack(f'{subject}\n{json.dumps(message)}')

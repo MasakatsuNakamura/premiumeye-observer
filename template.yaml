@@ -26,6 +26,7 @@ Resources:
       Policies:
         - CloudWatchLogsReadOnlyAccess
         - AmazonSNSFullAccess
+        - AmazonSSMReadOnlyAccess
 
   TasukiObserverLogGroup:
     Type: AWS::Logs::LogGroup
