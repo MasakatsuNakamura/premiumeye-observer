@@ -1,152 +1,70 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Knockme Observer
+  Tasuki Observer
 
 Globals:
   Function:
     Timeout: 3
 
 Parameters:
-  Environment:
-    Type: String
-    AllowedValues:
-      - production
-      - stage
-      - stage2
-      - development
-    Default: development
-
-Conditions:
-  IsProduction: !Equals [!Ref Environment, "production"]
-  IsDevelopment: !Equals [Environment, "development"]
-  NotDevelopment: !Not [!Equals [Environment, "development"]]
-
-Mappings:
-  EnvironmentMap:
-    production:
-      S3BucketName: knockme-direct-upload
-      EnvironmentCamel: Production
-    stage:
-      S3BucketName: knockme-direct-upload-stage
-      EnvironmentCamel: Stage
-    stage2:
-      S3BucketName: knockme-direct-upload-stage2
-      EnvironmentCamel: Stage2
-    development:
-      S3BucketName: direct-upload
-      EnvironmentCamel: Development
+  SourceLogGroup:
+    Type: "String"
+    Default: "/ecs/tasuki-land-staging"
 
 Resources:
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !FindInMap [ EnvironmentMap, !Ref Environment, S3BucketName]
-      AccessControl: Private
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: True
-        BlockPublicPolicy: True
-        IgnorePublicAcls: True
-        RestrictPublicBuckets: True
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      CorsConfiguration:
-        CorsRules:
-          - Id: stageCORSRule
-            AllowedHeaders:
-              - '*'
-            AllowedMethods:
-              - PUT
-            AllowedOrigins:
-              - '*'
-    Condition: NotDevelopment
-
-  KnockmeObserverFunction:
+  TasukiObserverFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/knockme_observer/
+      CodeUri: functions/tasuki_observer/
       Timeout: 60
       Handler: app.lambda_handler
       Runtime: python3.8
       Environment:
         Variables:
-          LOCALSTACK_ENDPOINT: !If [ "IsDevelopment", "http://localhost:4566", ""]
-          EMAIL_SNS_TOPIC_ARN: !If [ "IsProduction", !Ref KnockmeEmailTopic, ""]
-          SLACK_SNS_TOPIC_ARN: !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:awslambdaBot
-      Events:
-        SNSTopic:
-          Type: SNS
-          Properties:
-            Topic: 
-              Fn::Sub:
-                - arn:aws:sns:${AWS::Region}:${AWS::AccountId}:notification${Env}
-                - Env: !FindInMap [ EnvironmentMap, !Ref Environment, EnvironmentCamel]
+          EMAIL_SNS_TOPIC_ARN: !Ref TasukiEmailTopic
       Policies:
         - CloudWatchLogsReadOnlyAccess
         - AmazonSNSFullAccess
 
-  KnockmeObserverLogGroup:
+  TasukiObserverLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${KnockmeObserverFunction}
+      LogGroupName: !Sub /aws/lambda/${TasukiObserverFunction}
       RetentionInDays: 14
 
-  KnockmeEmailTopic:
+  TasukiEmailTopic:
     Type: AWS::SNS::Topic
     Properties: 
-      TopicName: 
-        Fn::Sub:
-          - KnockmeEmailTopic${Env}
-          - Env: !FindInMap [ EnvironmentMap, !Ref Environment, EnvironmentCamel]
-    Condition: IsProduction
+      TopicName: TasukiEmailTopic
 
-  KnockmeEmailSubscription:
+  TasukiEmailSubscription:
     Type: AWS::SNS::Subscription
     Properties:
-      Endpoint: prod_alert@knockme.jp
+      Endpoint: nakamura.masakatsu@gmail.com
       Protocol: email
-      TopicArn: !Ref 'KnockmeEmailTopic'
-    Condition: IsProduction
+      TopicArn: !Ref TasukiEmailTopic
 
-  SummarizeProcessLogsFunction:
-    Type: AWS::Serverless::Function
+  TasukiLandStagingSubscriptionFilter:
+    DependsOn:
+      - LambdaInvokePermission
+    Type: "AWS::Logs::SubscriptionFilter"
     Properties:
-      CodeUri: functions/summarize_process_logs/
-      Environment:
-        Variables:
-          LOCALSTACK_ENDPOINT: !If [ "IsDevelopment", "http://localhost:4566", ""]
-          ENVIRONMENT: !Ref Environment
-      Timeout: 60
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Events:
-        S3Event:
-          Type: S3
-          Properties:
-            Bucket: !Ref S3Bucket
-            Events: s3:ObjectCreated:*
-            Filter:
-              S3Key:
-                Rules:
-                  - Name: prefix
-                    Value: process_logs/
-                  - Name: suffix
-                    Value: .json.gz
-      Policies:
-        - S3CrudPolicy:
-            BucketName: !FindInMap [ EnvironmentMap, !Ref Environment, S3BucketName]
+      LogGroupName: !Ref SourceLogGroup
+      FilterPattern: |
+        [str = "/*" || str = "*ERROR*" || str = "*WARN"]
+      DestinationArn: !GetAtt TasukiObserverFunction.Arn
 
-  SummarizeProcessLogsLogGroup:
-    Type: AWS::Logs::LogGroup
+  LambdaInvokePermission:
+    Type: 'AWS::Lambda::Permission'
     Properties:
-      LogGroupName: !Sub /aws/lambda/${SummarizeProcessLogsFunction}
+      FunctionName: !Ref TasukiObserverFunction
+      Action: "lambda:InvokeFunction"
+      Principal: !Sub "logs.amazonaws.com"
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${SourceLogGroup}:*"
 
 Outputs:
-  KnockmeObserver:
-    Description: "Knockme Observer Lambda Function ARN"
-    Value: !GetAtt KnockmeObserverFunction.Arn
-  SummarizeProcessLogs:
-    Description: "Summarize Process Logs Lambda Function ARN"
-    Value: !GetAtt SummarizeProcessLogsFunction.Arn
+  TasukiObserver:
+    Description: "Tasuki Observer Lambda Function ARN"
+    Value: !GetAtt TasukiObserverFunction.Arn

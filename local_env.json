@@ -1,5 +1,0 @@
-{
-  "SummarizeProcessLogsFunction": {
-    "LOCALSTACK_ENDPOINT": "http://localstack:4566"
-  }
-}

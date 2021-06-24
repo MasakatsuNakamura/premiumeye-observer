@@ -2,9 +2,9 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "knockme-observer"
-s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-rf1jztk65zmj"
-s3_prefix = "knockme-observer"
+stack_name = "tasuki-observer"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-oj0ivg2a8u8p"
+s3_prefix = "tasuki-observer"
 region = "ap-northeast-1"
-confirm_changeset = true
+confirm_changeset = false
 capabilities = "CAPABILITY_IAM"
