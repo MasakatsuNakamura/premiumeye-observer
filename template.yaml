@@ -52,7 +52,7 @@ Resources:
     Properties:
       LogGroupName: !Ref SourceLogGroup
       FilterPattern: |
-        [str = "/*" || str = "*ERROR*" || str = "*WARN"]
+        [str = "/*" || str = "*ERROR*" || str = "*WARN*"]
       DestinationArn: !GetAtt TasukiObserverFunction.Arn
 
   LambdaInvokePermission:
