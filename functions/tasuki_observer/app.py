@@ -51,10 +51,11 @@ def lambda_handler(event, context):
   #ロググループ名、ログストリーム名をsubjectに設定
   subject = log_group + ' ' + log_stream
 
-  sns_client.publish(
-    TopicArn = sns_topic_arn,
-    Subject = subject,
-    Message = message
-  )
+  if 'ActionController::RoutingError' not in message:
+    sns_client.publish(
+      TopicArn = sns_topic_arn,
+      Subject = subject,
+      Message = message
+    )
 
-  post_slack(f'{subject}\n{message}')
+    post_slack(f'{subject}\n{message}')
