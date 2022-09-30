@@ -63,7 +63,7 @@ Resources:
     Properties:
       LogGroupName: !Ref SourceLogGroup
       FilterPattern: |
-        [str = "/*" || str = "app/*" || str = "*ERROR*" || str = "*WARN*" || str = "*FATAL*"]
+        [str = "/*" || str = "app/*" || str = "*ERROR*" || str = "*WARN*" || str = "*FATAL*" || str = "[*"]
       DestinationArn: !GetAtt TasukiObserverFunction.Arn
 
   TasukiLandStagingSubscriptionFilter:
@@ -73,7 +73,7 @@ Resources:
     Properties:
       LogGroupName: !Ref SourceLogGroupStaging
       FilterPattern: |
-        [str = "/*" || str = "app/*" || str = "*ERROR*" || str = "*WARN*" || str = "*FATAL*"]
+        [str = "/*" || str = "app/*" || str = "*ERROR*" || str = "*WARN*" || str = "*FATAL*" || str = "[*"]
       DestinationArn: !GetAtt TasukiObserverFunction.Arn
 
   LambdaInvokePermission:

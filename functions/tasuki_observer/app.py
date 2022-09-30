@@ -43,7 +43,7 @@ def lambda_handler(event, context):
   logger.info("EVENT: " + json.dumps(json_data))
 
   # ログデータ取得
-  message = json_data['logEvents'][0]['message']
+  message = '\n'.join(event['message'] for event in json_data['logEvents'])
 
   # SNS件名設定
   log_group = json_data['logGroup']
@@ -54,7 +54,7 @@ def lambda_handler(event, context):
   sns_client.publish(
     TopicArn = sns_topic_arn,
     Subject = subject,
-    Message = json.dumps(message)
+    Message = message
   )
 
-  post_slack(f'{subject}\n{json.dumps(message)}')
+  post_slack(f'{subject}\n{message}')
