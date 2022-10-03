@@ -51,7 +51,7 @@ def lambda_handler(event, context):
   #ロググループ名、ログストリーム名をsubjectに設定
   subject = log_group + ' ' + log_stream
 
-  if 'ActionController::RoutingError' not in message:
+  if 'ActionController::RoutingError' not in message and 'Can\'t verify CSRF token authenticity.' not in message:
     sns_client.publish(
       TopicArn = sns_topic_arn,
       Subject = subject,
