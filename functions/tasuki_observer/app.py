@@ -50,6 +50,7 @@ def lambda_handler(event, context):
   log_stream = json_data['logStream']
   #ロググループ名、ログストリーム名をsubjectに設定
   subject = log_group + ' ' + log_stream
+  cw_url = f'https://ap-northeast-1.console.aws.amazon.com/cloudwatch/home?region=ap-northeast-1#logsV2:log-groups/log-group/{log_group.replace("/", "$252F")}/log-events/{log_stream.replace("/", "$252F")}'
 
   if 'ActionController::RoutingError' not in message and 'Can\'t verify CSRF token authenticity.' not in message:
     sns_client.publish(
@@ -58,4 +59,4 @@ def lambda_handler(event, context):
       Message = message
     )
 
-    post_slack(f'{subject}\n{message}')
+    post_slack(f'<{cw_url}|{subject}>\n{message}')
