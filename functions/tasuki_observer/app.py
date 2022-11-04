@@ -6,22 +6,22 @@ import boto3
 import os
 import urllib.request
 
-def slack_webhook_url():
+def slack_webhook_url(product_name):
   ssm = boto3.client('ssm')
 
   response = ssm.get_parameter(
-      Name='/TASUKI_LAND/SLACK_WEBHOOK_URL',
+      Name=f'/{product_name}/SLACK_WEBHOOK_URL',
       WithDecryption=True
   )
   return response['Parameter']['Value']
 
-def post_slack(message):
+def post_slack(message, product_name):
   send_data = {
     "text": message,
   }
   send_text = json.dumps(send_data)
   request = urllib.request.Request(
-    slack_webhook_url(),
+    slack_webhook_url(product_name),
     data=send_text.encode('utf-8'),
     method="POST"
   )
@@ -48,15 +48,19 @@ def lambda_handler(event, context):
   # SNS件名設定
   log_group = json_data['logGroup']
   log_stream = json_data['logStream']
+  if 'tasuki-land' in log_group:
+    product_name = 'TASUKI_LAND'
+  else:
+    product_name = 'TASUKI_FUNDS'
   #ロググループ名、ログストリーム名をsubjectに設定
   subject = log_group + ' ' + log_stream
   cw_url = f'https://ap-northeast-1.console.aws.amazon.com/cloudwatch/home?region=ap-northeast-1#logsV2:log-groups/log-group/{log_group.replace("/", "$252F")}/log-events/{log_stream.replace("/", "$252F")}'
 
-  if 'ActionController::RoutingError' not in message and 'Can\'t verify CSRF token authenticity.' not in message:
+  if 'PumaWorkerKiller' not in message and 'ActionController::RoutingError' not in message and 'Can\'t verify CSRF token authenticity.' not in message:
     sns_client.publish(
       TopicArn = sns_topic_arn,
       Subject = subject,
       Message = message
     )
 
-    post_slack(f'<{cw_url}|{subject}>\n{message}')
+    post_slack(f'<{cw_url}|{subject}>\n{message}', product_name)

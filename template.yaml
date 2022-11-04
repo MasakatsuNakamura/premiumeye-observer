@@ -14,6 +14,12 @@ Parameters:
   SourceLogGroup:
     Type: "String"
     Default: "/ecs/tasuki-land"
+  SourceLogGroupFunds:
+    Type: "String"
+    Default: "/ecs/tasuki-funds-fargate"
+  SourceLogGroupFundsStaging:
+    Type: "String"
+    Default: "/ecs/tasuki-funds-staging-fargate"
 
 Resources:
   TasukiObserverFunction:
@@ -76,6 +82,26 @@ Resources:
         [str = "/*" || str = "app/*" || str = "*ERROR*" || str = "*WARN*" || str = "*FATAL*" || str = "[*"]
       DestinationArn: !GetAtt TasukiObserverFunction.Arn
 
+  TasukiFundsSubscriptionFilter:
+    DependsOn:
+      - LambdaInvokePermission
+    Type: "AWS::Logs::SubscriptionFilter"
+    Properties:
+      LogGroupName: !Ref SourceLogGroupFunds
+      FilterPattern: |
+        [str = "/*" || str = "app/*" || str = "*ERROR*" || str = "*WARN*" || str = "*FATAL*" || str = "[*"]
+      DestinationArn: !GetAtt TasukiObserverFunction.Arn
+
+  TasukiFundsStagingSubscriptionFilter:
+    DependsOn:
+      - LambdaInvokePermissionStaging
+    Type: "AWS::Logs::SubscriptionFilter"
+    Properties:
+      LogGroupName: !Ref SourceLogGroupFundsStaging
+      FilterPattern: |
+        [str = "/*" || str = "app/*" || str = "*ERROR*" || str = "*WARN*" || str = "*FATAL*" || str = "[*"]
+      DestinationArn: !GetAtt TasukiObserverFunction.Arn
+
   LambdaInvokePermission:
     Type: 'AWS::Lambda::Permission'
     Properties:
@@ -93,6 +119,24 @@ Resources:
       Principal: !Sub "logs.amazonaws.com"
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${SourceLogGroupStaging}:*"
+
+  LambdaInvokePermissionFunds:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !Ref TasukiObserverFunction
+      Action: "lambda:InvokeFunction"
+      Principal: !Sub "logs.amazonaws.com"
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${SourceLogGroupFunds}:*"
+
+  LambdaInvokePermissionFundsStaging:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !Ref TasukiObserverFunction
+      Action: "lambda:InvokeFunction"
+      Principal: !Sub "logs.amazonaws.com"
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${SourceLogGroupFundsStaging}:*"
 
 Outputs:
   TasukiObserver:
