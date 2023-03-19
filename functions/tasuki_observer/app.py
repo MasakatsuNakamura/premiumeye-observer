@@ -10,8 +10,8 @@ def slack_webhook_url(product_name):
   ssm = boto3.client('ssm')
 
   response = ssm.get_parameter(
-      Name=f'/{product_name}/SLACK_WEBHOOK_URL',
-      WithDecryption=True
+    Name=f'/{product_name}/SLACK_WEBHOOK_URL',
+    WithDecryption=True
   )
   return response['Parameter']['Value']
 
@@ -56,7 +56,9 @@ def lambda_handler(event, context):
   subject = log_group + ' ' + log_stream
   cw_url = f'https://ap-northeast-1.console.aws.amazon.com/cloudwatch/home?region=ap-northeast-1#logsV2:log-groups/log-group/{log_group.replace("/", "$252F")}/log-events/{log_stream.replace("/", "$252F")}'
 
-  if 'PumaWorkerKiller' not in message and 'ActionController::RoutingError' not in message and 'Can\'t verify CSRF token authenticity.' not in message:
+  ng_words = ['PumaWorkerKiller', 'ActionController::RoutingError', 'Can\'t verify CSRF token authenticity.', 'ActionView::MissingTemplate']
+  # すべてのNGワードを含まない場合
+  if sum([m not in message for m in ng_words]) == len(ng_words):
     sns_client.publish(
       TopicArn = sns_topic_arn,
       Subject = subject,
