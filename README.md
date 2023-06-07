@@ -1,6 +1,6 @@
-# tasuki-observer
+# premiumeye-observer
 
-AWS SAMを用いたTasukiTech監視用SAMリポジトリ
+AWS SAMを用いた監視用SAMリポジトリ
 
 # 使い方
 
